@@ -1,0 +1,29 @@
+name: 💡 功能建议
+description: 想要一个新功能，或对现有交互有改进想法
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你想解决什么问题
+      description: 描述你的使用场景和痛点，比直接说"加个 XX 按钮"更有帮助
+      placeholder: 例如：订阅有 800 多个，想按「多久没更新」批量取关，现在只能一个个点
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 你期望的方案
+      description: 有具体想法就写，没有也没关系
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已经搜索过现有 Issue，没有重复
+          required: true

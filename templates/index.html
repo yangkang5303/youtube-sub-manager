@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube 订阅管理</title>
+    <meta name="color-scheme" content="dark light">
+    <script>
+        // 在 CSS 生效前就定好主题，避免刷新时闪一下错误配色
+        (function () {
+            try {
+                var saved = localStorage.getItem("ytsm-theme");
+                if (saved !== "light" && saved !== "dark") {
+                    saved = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+                }
+                document.documentElement.setAttribute("data-theme", saved);
+            } catch (e) {
+                document.documentElement.setAttribute("data-theme", "dark");
+            }
+        })();
+    </script>
+    <link rel="stylesheet" href="/static/css/style.css?v={{ asset_v('static/css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📺 YouTube 订阅管理</h1>
+            <p class="subtitle">查看、分类、清理你的 YouTube 订阅</p>
+            <div class="header-actions">
+                <span id="lastUpdated" class="last-updated"></span>
+                <button id="refreshBtn" class="refresh-btn" title="重新从 YouTube 拉取最新数据">🔄 刷新数据</button>
+                <button id="themeBtn" class="theme-btn" title="切换深色 / 浅色模式" aria-label="切换深色 / 浅色模式">🌙</button>
+            </div>
+            <div class="build-tag" title="前端资源版本号（文件修改时间）。重建后应变化；若一直是旧值说明加载的还是旧文件。">
+                前端 v{{ asset_v('static/js/app.js') }} · 后端 v{{ asset_v('app.py') }}
+            </div>
+        </header>
+
+        <!-- 紧凑统计条（点击即筛选） -->
+        <div class="stat-bar" id="summaryCards">
+            <button class="stat" data-filter="all" title="点击查看全部订阅">
+                <span class="stat-num" id="totalCount">-</span>
+                <span class="stat-label">总订阅</span>
+            </button>
+            <button class="stat stat-active" data-filter="active" title="点击只看 90 天内有更新的频道">
+                <span class="stat-num" id="activeCount">-</span>
+                <span class="stat-label">活跃</span>
+            </button>
+            <button class="stat stat-inactive" data-filter="inactive" title="点击只看 90 天未更新的频道">
+                <span class="stat-num" id="inactiveCount">-</span>
+                <span class="stat-label">不活跃</span>
+            </button>
+            <button class="stat stat-cats" data-filter="categories" title="点击展开分类筛选">
+                <span class="stat-num" id="catCount">-</span>
+                <span class="stat-label">分类</span>
+            </button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="list">全部订阅</button>
+            <button class="tab-btn" data-tab="inactive">不活跃</button>
+        </div>
+
+        <!-- 分类筛选胶囊（点「分类」统计项展开） -->
+        <div class="cat-chips hidden" id="catChips"></div>
+
+        <!-- Active filter indicator -->
+        <div class="filter-indicator hidden" id="filterIndicator">
+            <span id="filterIndicatorText"></span>
+            <button id="clearFilterBtn" class="clear-filter-btn">✕ 清除筛选</button>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters" id="filtersBar">
+            <input type="text" id="searchInput" placeholder="搜索频道名称...">
+            <select id="sortSelect">
+                <option value="name">按名称排序</option>
+                <option value="days_asc">最近更新 → 最久</option>
+                <option value="days_desc">最久 → 最近更新</option>
+                <option value="subs_desc">粉丝数 ↓</option>
+                <option value="video_count">视频数 ↓</option>
+            </select>
+            <button id="bulkToggleBtn" class="bulk-toggle-btn" title="多选频道，批量打自定义标签">
+                <span class="bulk-toggle-icon">☑</span> 批量打标签
+            </button>
+        </div>
+
+        <!-- 批量操作栏（进入批量模式后出现，滚动时吸顶） -->
+        <div class="bulk-bar hidden" id="bulkBar">
+            <div class="bulk-row">
+                <span class="bulk-count" id="bulkCount">已选 0 个</span>
+                <div class="bulk-links">
+                    <button class="link-btn" id="selectAllBtn" title="选中当前筛选结果里的全部频道">全选</button>
+                    <button class="link-btn" id="invertSelBtn" title="反选">反选</button>
+                    <button class="link-btn" id="clearSelBtn">清空</button>
+                    <button class="link-btn link-btn-exit" id="exitBulkBtn">退出</button>
+                </div>
+            </div>
+            <div class="bulk-row">
+                <input type="text" id="labelInput" class="label-input" list="labelOptions"
+                       maxlength="24" placeholder="输入新标签名，或选择已有标签…"
+                       autocomplete="off">
+                <datalist id="labelOptions"></datalist>
+                <button class="bulk-btn bulk-btn-add" id="addLabelBtn">＋ 添加标签</button>
+                <button class="bulk-btn bulk-btn-remove" id="removeLabelBtn">－ 移除标签</button>
+            </div>
+            <div class="bulk-hint" id="bulkHint">点击频道卡片即可选中 / 取消</div>
+        </div>
+
+        <!-- Tab: 全部订阅 -->
+        <div class="tab-content active" id="tab-list">
+            <div id="subList"></div>
+        </div>
+
+        <!-- Tab: 不活跃 -->
+        <div class="tab-content" id="tab-inactive">
+            <div id="inactiveList"></div>
+        </div>
+
+        <div id="loading" class="loading hidden">加载中...</div>
+        <div id="errorBanner" class="error-banner hidden"></div>
+    </div>
+
+    <script src="/static/js/app.js?v={{ asset_v('static/js/app.js') }}"></script>
+</body>
+</html>

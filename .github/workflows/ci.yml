@@ -1,0 +1,120 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+# 同一分支的新 push 取消掉还在跑的旧任务
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: 测试 (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Dockerfile 用的是 3.12；同时保底验证 3.10（README 里声明的最低版本）
+        python-version: ["3.10", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+
+      - name: 语法检查
+        run: python -m compileall -q app.py scripts tests
+
+      - name: 运行测试
+        run: python -m unittest discover -s tests -v
+
+      - name: 配置向导自检（无凭证时应以非 0 退出）
+        run: |
+          if python scripts/setup.py --check; then
+            echo "::error::没有凭证时 setup.py --check 本应失败"
+            exit 1
+          fi
+          echo "✓ 无凭证时正确返回失败"
+
+  docker:
+    name: Docker 构建
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: 构建镜像（不推送）
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: yt-sub-manager:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 容器能起来并通过健康检查
+        run: |
+          docker run -d --name ci-smoke -p 18065:8765 -p 18899:8899 \
+            -e OAUTH_PORT=8899 -e OAUTH_BIND_ADDR=0.0.0.0 yt-sub-manager:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:18065/healthz > /tmp/healthz.json; then
+              cat /tmp/healthz.json
+              echo
+              echo "✓ 容器启动成功"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::容器 60 秒内没有通过 /healthz"
+          docker logs ci-smoke
+          exit 1
+
+      - name: 清理
+        if: always()
+        run: docker rm -f ci-smoke || true
+
+  secret-scan:
+    name: 凭证泄露检查
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 确认凭证与隐私数据没有被提交
+        run: |
+          set -u
+          fail=0
+
+          # 1) 这些文件一旦被 Git 跟踪，就是明确的泄露
+          for f in config/client_secrets.json config/token.json \
+                   data.db data/data.db output/subscriptions.json; do
+            if git ls-files --error-unmatch "$f" > /dev/null 2>&1; then
+              echo "::error file=$f::$f 被提交进仓库了，请立即删除并轮换凭证"
+              fail=1
+            fi
+          done
+
+          # 2) 兜底：扫所有被跟踪文件里的「真实凭证特征」
+          #    （只匹配真实长度，不会误伤文档和测试里的示例值）
+          if git grep -nI -E \
+              'GOCSPX-[A-Za-z0-9_-]{15,}|ya29\.[A-Za-z0-9_-]{20,}|"refresh_token"[[:space:]]*:[[:space:]]*"1//' \
+              -- . ; then
+            echo "::error::被跟踪的文件里发现了疑似真实 OAuth 凭证"
+            fail=1
+          fi
+
+          if [ "$fail" = "0" ]; then
+            echo "✓ 没有发现凭证泄露"
+          fi
+          exit "$fail"

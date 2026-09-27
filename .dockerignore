@@ -1,0 +1,41 @@
+# ── 不要打进镜像的东西 ──
+# 注意：真正的凭证防护在 Dockerfile 的 COPY 白名单（只 COPY app.py / templates /
+# static / scripts），这里主要是缩小构建上下文、避免手滑把敏感文件送进 daemon。
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+
+# 凭证与本地状态（部署时用 volume 挂载，绝不进镜像）
+config/token.json
+config/client_secrets.json
+config/*.json
+client_secret*.json
+token.json
+data.db
+*.db
+data/
+cache/
+output/
+.env
+.env.local
+
+# 开发环境
+.git/
+.github/
+.gitignore
+.DS_Store
+*.log
+
+# 测试与文档（镜像运行时用不到）
+tests/
+docs/
+*.md
+!README.md
+.vscode/
+.idea/

@@ -1,0 +1,71 @@
+name: 🐛 Bug 报告
+description: 遇到了不正常的行为（报错、白屏、数据不对……）
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！请尽量填完整，信息越全越容易定位。
+
+        > ⚠️ **千万不要粘贴 `client_secrets.json` 或 `token.json` 的内容**，
+        > 那是你的账号凭证。日志和截图也请先检查一遍。
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 发生了什么
+      description: 你看到的现象，以及你期望的结果
+      placeholder: 例如：点「刷新数据」后页面一直转圈，控制台报 500
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开 http://localhost:8765
+        2. 点右上角「🔄 刷新数据」
+        3. 页面卡住
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deploy
+    attributes:
+      label: 运行方式
+      options:
+        - Docker Compose（推荐方式）
+        - 本地 Python（python app.py）
+        - 其它 / 不确定
+    validations:
+      required: true
+
+  - type: input
+    id: env
+    attributes:
+      label: 系统与版本
+      description: 操作系统、Python 或 Docker 版本，以及是不是 ARM 机器
+      placeholder: "macOS 15.2 (Apple Silicon) / Docker 27.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 相关日志
+      description: "Docker 部署可用 `docker compose logs --tail=100 app`；本地运行看终端输出"
+      render: shell
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已经检查过日志/截图，里面没有我的凭证或个人信息
+          required: true
+        - label: 我已经搜索过现有 Issue，没有重复
+          required: true

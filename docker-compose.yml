@@ -1,0 +1,67 @@
+# YouTube Subscription Manager
+#
+# 用法：
+#   mkdir -p config data cache output
+#   docker compose up -d --build
+#
+# 可选：把 .env.example 复制成 .env 来自定义端口、访问口令等。
+# 下面所有 ${变量:-默认值} 都会被 .env 里的同名变量覆盖；
+# 没有 .env 文件时全部走默认值。
+
+services:
+  app:
+    build: .
+    image: yt-sub-manager:latest
+    container_name: yt-sub-manager
+    restart: unless-stopped
+
+    ports:
+      # 左边是宿主机端口（可改），右边是容器内端口（固定）
+      - "${APP_PORT:-8765}:8765"          # Web 界面
+      # OAuth 回调端口：宿主机侧和容器内必须一致，所以两边共用同一个变量，
+      # 只改 .env 里的 OAUTH_PORT 就能同时改掉，不会漏改其中一处。
+      - "${OAUTH_PORT:-8899}:${OAUTH_PORT:-8899}"
+
+    volumes:
+      # ── 持久化状态：容器重建/升级都不会丢 ──
+      - ./config:/app/config      # client_secrets.json + token.json
+      - ./data:/app/data          # SQLite 订阅快照
+      - ./cache:/app/cache        # 头像缩略图缓存
+      - ./output:/app/output      # 导出的 subscriptions.json
+
+    environment:
+      TZ: "${TZ:-Asia/Shanghai}"
+
+      # 容器内监听端口（对应上面 ports 的右侧，一般不用改）
+      PORT: "8765"
+
+      # 状态文件位置（指向上面挂载的 volume）
+      CONFIG_DIR: /app/config
+      DB_PATH: /app/data/data.db
+      THUMB_DIR: /app/cache/thumbs
+
+      # 订阅数据缓存时长（秒）：超过它，下次打开页面才重新调 YouTube API
+      REFRESH_INTERVAL_SECONDS: "${REFRESH_INTERVAL_SECONDS:-21600}"
+
+      # 可选：后台定时刷新间隔（秒）。0 = 关闭（默认；不打开页面就不消耗配额）
+      # 想保持数据常新可设 "7200"（每 2 小时，约占日配额 32%）
+      AUTO_REFRESH_SECONDS: "${AUTO_REFRESH_SECONDS:-0}"
+
+      # OAuth 授权：容器内无浏览器，绑到 0.0.0.0 并靠上面的端口映射回调。
+      OAUTH_PORT: "${OAUTH_PORT:-8899}"
+      OAUTH_BIND_ADDR: "0.0.0.0"
+      OAUTH_OPEN_BROWSER: "0"
+      # 等待 Google 回调的超时秒数：超时后自动释放回调端口，
+      # 避免一次没走完的授权把端口一直占住（曾表现为
+      # "[Errno 98] Address already in use"）。
+      OAUTH_TIMEOUT_SECONDS: "${OAUTH_TIMEOUT_SECONDS:-600}"
+      # 用 Tailscale Serve 提供 HTTPS + 「Web 应用」类型 OAuth 客户端时才需要设置
+      # （在 .env 里设 OAUTH_REDIRECT_URI=https://<机器名>.<tailnet>.ts.net/）
+      OAUTH_REDIRECT_URI: "${OAUTH_REDIRECT_URI:-}"
+
+      # ── 访问保护（可选，强烈建议对外暴露时开启）──
+      # 设置 ACCESS_PASSWORD 后，浏览器打开会先弹出登录框（HTTP Basic）。
+      # 应用本身没有账号体系，暴露到局域网/Tailscale 时建议开启。
+      # 请在 .env 里设置，不要直接写在这个文件里（这个文件会进 Git）。
+      ACCESS_USER: "${ACCESS_USER:-admin}"
+      ACCESS_PASSWORD: "${ACCESS_PASSWORD:-}"

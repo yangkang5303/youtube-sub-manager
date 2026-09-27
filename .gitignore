@@ -1,0 +1,40 @@
+# ────────────────────── 凭证与隐私数据（绝对不能提交）──────────────────────
+# 这些文件包含你的 Google OAuth 凭证和真实订阅数据，
+# 一旦推到公开仓库就等于泄露，务必确认它们都被忽略。
+config/token.json
+config/client_secrets.json
+config/*.json
+client_secret*.json
+token.json
+
+# 本地数据库（订阅快照 + 自定义标签）
+data.db
+*.db
+data/
+# 导出的订阅 JSON、头像缓存
+output/
+cache/
+
+# 本地配置
+.env
+.env.local
+
+# ────────────────────── Python ──────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ────────────────────── 编辑器 / 系统 ──────────────────────
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# ────────────────────── 日志 ──────────────────────
+*.log

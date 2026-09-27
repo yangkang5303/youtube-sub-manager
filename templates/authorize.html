@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google 授权 · YouTube 订阅管理</title>
+    <meta name="color-scheme" content="dark light">
+    <script>
+        // 与首页一致：CSS 生效前先定好主题，避免闪一下错误配色
+        (function () {
+            try {
+                var saved = localStorage.getItem("ytsm-theme");
+                if (saved !== "light" && saved !== "dark") {
+                    saved = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+                }
+                document.documentElement.setAttribute("data-theme", saved);
+            } catch (e) {
+                document.documentElement.setAttribute("data-theme", "dark");
+            }
+        })();
+    </script>
+    <link rel="stylesheet" href="/static/css/style.css?v={{ asset_v('static/css/style.css') }}">
+    <style>
+        .auth-box {
+            max-width: 620px;
+            margin: 64px auto;
+            padding: 32px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+        }
+
+        .auth-box h1 { font-size: 22px; margin: 0 0 10px; color: var(--text-strong); }
+        .auth-box p { color: var(--text-dim); font-size: 15px; line-height: 1.7; margin: 0 0 14px; }
+
+        .auth-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 9px;
+            text-decoration: none;
+            background: var(--accent);
+            color: var(--on-accent, #fff);
+            border: 1px solid var(--accent);
+            transition: filter 0.16s ease, transform 0.16s ease;
+        }
+
+        .auth-btn:hover { filter: brightness(1.08); }
+        .auth-btn:active { transform: scale(0.98); }
+
+        .auth-url {
+            margin-top: 22px;
+            padding-top: 18px;
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text-mute);
+        }
+
+        .auth-url code {
+            display: block;
+            margin-top: 8px;
+            padding: 10px 12px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 12px;
+            line-height: 1.5;
+            word-break: break-all;
+            color: var(--text);
+            user-select: all;
+        }
+
+        .auth-status {
+            margin-top: 20px;
+            font-size: 14px;
+            color: var(--info-text);
+        }
+
+        .auth-status.err { color: var(--danger); }
+        .auth-status.ok { color: var(--success); }
+
+        .auth-warn {
+            padding: 12px 14px;
+            border-radius: 9px;
+            background: var(--danger-soft);
+            border: 1px solid var(--danger);
+            color: var(--text);
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="auth-box">
+            <h1>🔑 需要 Google 授权</h1>
+
+            {% if error %}
+                <div class="auth-warn">上一次授权没有完成：{{ error }}</div>
+            {% endif %}
+
+            <p>
+                点击下面的按钮前往 Google 同意授权。授权完成后本页会<strong>自动跳转</strong>回应用，
+                无需手动操作。
+            </p>
+
+            <a class="auth-btn" href="{{ auth_url }}">前往 Google 授权 →</a>
+
+            <p class="auth-status" id="authStatus">⏳ 等待授权中…（回调地址 <code style="display:inline;padding:2px 6px">{{ redirect_uri }}</code>）</p>
+
+            <div class="auth-url">
+                按钮点不动？手动复制这个链接到浏览器打开：
+                <code>{{ auth_url }}</code>
+            </div>
+
+            <div class="auth-url">
+                授权一直不成功？确认浏览器所在机器能访问上面的回调地址（Docker 部署时，
+                该端口需要映射到宿主机，见 <code style="display:inline;padding:2px 6px">docker-compose.yml</code> 中的
+                <code style="display:inline;padding:2px 6px">OAUTH_PORT</code>）。
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var el = document.getElementById('authStatus');
+            var timer = setInterval(function () {
+                fetch('/authorize/status', { cache: 'no-store' })
+                    .then(function (r) { return r.json(); })
+                    .then(function (s) {
+                        if (s.done) {
+                            clearInterval(timer);
+                            el.className = 'auth-status ok';
+                            el.textContent = '✅ 授权成功，正在进入应用…';
+                            setTimeout(function () { location.href = '/'; }, 600);
+                        } else if (s.error) {
+                            clearInterval(timer);
+                            el.className = 'auth-status err';
+                            el.textContent = '❌ ' + s.error + '（刷新本页可重新发起授权）';
+                        }
+                    })
+                    .catch(function () { /* 忽略瞬时网络错误，下一轮继续 */ });
+            }, 2000);
+        })();
+    </script>
+</body>
+</html>

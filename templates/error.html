@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>错误</title>
+    <link rel="stylesheet" href="/static/css/style.css?v={{ asset_v('static/css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="error-page">
+            <h1>⚠️ 出错了</h1>
+            <p id="errorMsg">{{ message | safe }}</p>
+        </div>
+    </div>
+</body>
+</html>
