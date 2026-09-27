@@ -51,7 +51,7 @@ YouTube 官方只能一页页翻你的订阅，想找"那个做菜频道"、想�
 ### 第 1 步 · 克隆项目
 
 ```bash
-git clone https://github.com/<你的用户名>/youtube-sub-manager.git
+git clone https://github.com/yangkang5303/youtube-sub-manager.git
 cd youtube-sub-manager
 
 # 建好数据挂载目录（不建的话 Docker 可能建成 root 属主，Linux 上会写不进去）

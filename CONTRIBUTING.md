@@ -19,7 +19,7 @@
 ## 💻 本地开发
 
 ```bash
-git clone https://github.com/<你的用户名>/youtube-sub-manager.git
+git clone https://github.com/yangkang5303/youtube-sub-manager.git
 cd youtube-sub-manager
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt

@@ -1,10 +1,10 @@
 contact_links:
   - name: 📖 Google 凭证怎么申请？
-    url: https://github.com/OWNER/REPO/blob/main/docs/google-oauth.md
+    url: https://github.com/yangkang5303/youtube-sub-manager/blob/main/docs/google-oauth.md
     about: 首次配置最容易卡住的一步，包含常见报错对照表
   - name: 🚀 部署到服务器 / NAS / 局域网
-    url: https://github.com/OWNER/REPO/blob/main/docs/deployment.md
+    url: https://github.com/yangkang5303/youtube-sub-manager/blob/main/docs/deployment.md
     about: Docker 部署、远程访问、Tailscale、备份与升级
   - name: ❓ 常见问题（7 天失效、配额、隐私）
-    url: https://github.com/OWNER/REPO#-常见问题
+    url: https://github.com/yangkang5303/youtube-sub-manager#-常见问题
     about: 先看这里，很多问题已有答案
