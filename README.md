@@ -7,12 +7,8 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3776ab?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![Docker](https://img.shields.io/badge/docker-compose-2496ed?style=flat-square&logo=docker&logoColor=white)](docker-compose.yml)
 
-<!--
-  📸 加一张截图会让 README 好看很多（GitHub 上第一印象很重要）：
-  1. 把应用跑起来，截一张主界面图，存成 docs/screenshot.png
-  2. 把下面这行前面的 # 去掉即可
--->
-<!-- ![界面截图](docs/screenshot.png) -->
+<img width="1398" height="626" alt="image" src="https://github.com/user-attachments/assets/e9d31514-639a-4415-816c-87a8208a5445" />
+
 
 ---
 
